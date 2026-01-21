@@ -11,15 +11,8 @@ import (
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
-	"github.com/containerd/containerd/errdefs"
-	"github.com/containerd/containerd/leases"
-	"github.com/containerd/containerd/leases/leaseutil"
+	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
-	"github.com/containerd/containerd/platforms"
-	"github.com/containerd/containerd/snapshots"
-	"github.com/containerd/containerd/snapshots/snapshotter"
-	"github.com/opencontainers/image-spec/identity"
-	"github.com/opencontainers/image-spec/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 
@@ -33,6 +26,14 @@ type Runtime interface {
 	Delete(ctx context.Context, id string) error
 	Exists(id string) bool
 	Status(ctx context.Context, id string) (string, error)
+	Logs(ctx context.Context, id string, follow bool, tail int) (LogReader, error)
+	Exec(ctx context.Context, id string, cmd []string, stdin bool) (int, error)
+}
+
+// LogReader provides access to container logs
+type LogReader interface {
+	Read(p []byte) (n int, err error)
+	Close() error
 }
 
 type containerdRuntime struct {
@@ -321,4 +322,138 @@ func GetDefaultRuntime() (Runtime, error) {
 	}
 
 	return NewContainerdRuntime(address)
+}
+
+// containerLogReader wraps log file reading
+type containerLogReader struct {
+	file     *os.File
+	follow   bool
+	done     chan struct{}
+}
+
+func (r *containerLogReader) Read(p []byte) (n int, err error) {
+	return r.file.Read(p)
+}
+
+func (r *containerLogReader) Close() error {
+	if r.done != nil {
+		close(r.done)
+	}
+	return r.file.Close()
+}
+
+func (r *containerdRuntime) Logs(ctx context.Context, id string, follow bool, tail int) (LogReader, error) {
+	// Containerd stores logs in a fifo/file. We'll check standard log locations.
+	// For budgie, we store logs in /var/lib/budgie/logs/<container-id>.log
+	dataDir := os.Getenv("BUDGIE_DATA_DIR")
+	if dataDir == "" {
+		dataDir = "/var/lib/budgie"
+	}
+
+	logPath := filepath.Join(dataDir, "logs", id[:12]+".log")
+
+	// Ensure log directory exists
+	if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log directory: %w", err)
+	}
+
+	// Check if log file exists
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		// Create empty log file if it doesn't exist
+		f, err := os.Create(logPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create log file: %w", err)
+		}
+		f.Close()
+	}
+
+	file, err := os.Open(logPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file: %w", err)
+	}
+
+	// Handle tail option
+	if tail > 0 {
+		// Seek to approximate position for tail
+		stat, _ := file.Stat()
+		if stat.Size() > 0 {
+			// Estimate ~100 bytes per line for seeking
+			offset := int64(tail * 100)
+			if offset > stat.Size() {
+				offset = 0
+			} else {
+				offset = stat.Size() - offset
+			}
+			file.Seek(offset, 0)
+
+			// Skip to next newline if we're in the middle of a line
+			if offset > 0 {
+				buf := make([]byte, 1)
+				for {
+					_, err := file.Read(buf)
+					if err != nil || buf[0] == '\n' {
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return &containerLogReader{
+		file:   file,
+		follow: follow,
+		done:   make(chan struct{}),
+	}, nil
+}
+
+func (r *containerdRuntime) Exec(ctx context.Context, id string, cmd []string, stdin bool) (int, error) {
+	container, err := r.client.LoadContainer(ctx, id)
+	if err != nil {
+		return -1, fmt.Errorf("failed to load container: %w", err)
+	}
+
+	task, err := container.Task(ctx, nil)
+	if err != nil {
+		return -1, fmt.Errorf("container is not running: %w", err)
+	}
+
+	// Get container spec for process defaults
+	spec, err := container.Spec(ctx)
+	if err != nil {
+		return -1, fmt.Errorf("failed to get container spec: %w", err)
+	}
+
+	// Create exec process spec
+	execSpec := spec.Process
+	execSpec.Args = cmd
+	execSpec.Terminal = stdin
+
+	// Create unique exec ID
+	execID := fmt.Sprintf("exec-%d", time.Now().UnixNano())
+
+	var ioCreator cio.Creator
+	if stdin {
+		ioCreator = cio.NewCreator(cio.WithStdio)
+	} else {
+		ioCreator = cio.NewCreator(cio.WithStreams(nil, os.Stdout, os.Stderr))
+	}
+
+	process, err := task.Exec(ctx, execID, execSpec, ioCreator)
+	if err != nil {
+		return -1, fmt.Errorf("failed to create exec process: %w", err)
+	}
+	defer process.Delete(ctx)
+
+	if err := process.Start(ctx); err != nil {
+		return -1, fmt.Errorf("failed to start exec process: %w", err)
+	}
+
+	// Wait for process to complete
+	exitCh, err := process.Wait(ctx)
+	if err != nil {
+		return -1, fmt.Errorf("failed to wait for exec process: %w", err)
+	}
+
+	status := <-exitCh
+	return int(status.ExitCode()), nil
 }

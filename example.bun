@@ -16,6 +16,9 @@ volumes:
     target: "/usr/share/nginx/html"
     mode: rw
 
+# Load additional environment variables from file
+# env_file: ".env"
+
 environment:
   - APP_ENV=production
   - DEBUG=false
@@ -26,6 +29,20 @@ healthcheck:
   timeout: 5s
   retries: 3
 
+# Restart policy: "no", "always", "on-failure", "unless-stopped"
+restart_policy:
+  name: "on-failure"
+  maximum_retry_count: 3
+
+# Stop timeout in seconds
+stop_timeout: 10
+
 replicas:
   min: 2
   max: 5
+
+# Resource limits
+resources:
+  cpu_shares: 1024
+  memory_limit: 536870912  # 512MB
+  pids_limit: 100

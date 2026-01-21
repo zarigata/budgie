@@ -61,6 +61,12 @@ type ResourceLimits struct {
 	PidsLimit   int64  `yaml:"pids_limit" json:"pids_limit"`     // Max number of PIDs
 }
 
+// RestartPolicy defines container restart behavior
+type RestartPolicy struct {
+	Name              string `yaml:"name" json:"name"`                               // "no", "always", "on-failure", "unless-stopped"
+	MaximumRetryCount int    `yaml:"maximum_retry_count" json:"maximum_retry_count"` // Max retries for "on-failure"
+}
+
 // ImageConfig defines image configuration
 type ImageConfig struct {
 	DockerImage string   `yaml:"docker_image" json:"docker_image"`
@@ -70,25 +76,27 @@ type ImageConfig struct {
 
 // Container represents a budgie container
 type Container struct {
-	ID        string          `json:"id"`
-	Name      string          `json:"name"`
-	State     ContainerState  `json:"state"`
-	Image     ImageConfig     `json:"image"`
-	Ports     []PortMapping   `json:"ports"`
-	Volumes   []VolumeMapping `json:"volumes"`
-	Env       []string        `json:"env"`
-	Health    *HealthCheck    `json:"health_check,omitempty"`
-	Replicas  *ReplicasConfig `json:"replicas,omitempty"`
-	Resources *ResourceLimits `json:"resources,omitempty"`
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	State         ContainerState  `json:"state"`
+	Image         ImageConfig     `json:"image"`
+	Ports         []PortMapping   `json:"ports"`
+	Volumes       []VolumeMapping `json:"volumes"`
+	Env           []string        `json:"env"`
+	Health        *HealthCheck    `json:"health_check,omitempty"`
+	Replicas      *ReplicasConfig `json:"replicas,omitempty"`
+	Resources     *ResourceLimits `json:"resources,omitempty"`
+	RestartPolicy *RestartPolicy  `json:"restart_policy,omitempty"`
 
 	// Runtime fields
-	BundlePath string    `json:"-"`                    // Path to .bun file
-	NodeID     string    `json:"node_id"`              // Primary node ID
-	Peers      []string  `json:"peers"`                // Replica node IDs
-	CreatedAt  time.Time `json:"created_at"`
-	StartedAt  time.Time `json:"started_at"`
-	ExitedAt   time.Time `json:"exited_at,omitempty"`
-	Pid        int       `json:"pid"`                  // Container process ID
+	BundlePath   string    `json:"-"`                       // Path to .bun file
+	NodeID       string    `json:"node_id"`                 // Primary node ID
+	Peers        []string  `json:"peers"`                   // Replica node IDs
+	CreatedAt    time.Time `json:"created_at"`
+	StartedAt    time.Time `json:"started_at"`
+	ExitedAt     time.Time `json:"exited_at,omitempty"`
+	Pid          int       `json:"pid"`                     // Container process ID
+	RestartCount int       `json:"restart_count,omitempty"` // Number of times container has been restarted
 }
 
 // GenerateContainerID generates a unique 64-character hex container ID

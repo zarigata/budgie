@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -70,6 +69,12 @@ func stopContainer(cmd *cobra.Command, args []string) error {
 	printContainerInfo(ctr)
 
 	return nil
+}
+
+func printContainerInfo(ctr *types.Container) {
+	fmt.Printf("  ID:    %s\n", ctr.ShortID())
+	fmt.Printf("  Name:  %s\n", ctr.Name)
+	fmt.Printf("  Image: %s\n", ctr.Image.DockerImage)
 }
 
 func GetStopCmd() *cobra.Command {
