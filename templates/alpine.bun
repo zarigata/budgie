@@ -1,0 +1,39 @@
+version: "1.0"
+name: "alpine-base"
+
+# Alpine Linux - Minimal container (~5MB)
+# Great for microservices and minimal footprint applications
+
+image:
+  docker_image: "alpine:3.19"
+  command: ["/bin/sh"]
+  workdir: "/app"
+
+ports:
+  - container_port: 8080
+    host_port: 8080
+    protocol: tcp
+
+volumes:
+  - source: "./data"
+    target: "/app/data"
+    mode: rw
+
+environment:
+  - "ALPINE_VERSION=3.19"
+  - "TZ=UTC"
+
+resources:
+  cpu_shares: 512
+  memory_limit: 134217728  # 128MB
+  pids_limit: 100
+
+healthcheck:
+  path: "/"
+  interval: 30s
+  timeout: 5s
+  retries: 3
+
+replicas:
+  min: 1
+  max: 3

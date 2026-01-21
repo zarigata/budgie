@@ -1,0 +1,31 @@
+version: "1.0"
+name: "webapp"
+
+image:
+  docker_image: "nginx:alpine"
+  command: ["/bin/sh", "-c", "echo 'Hello from budgie!' && nginx -g 'daemon off;'"]
+  workdir: "/app"
+
+ports:
+  - container_port: 80
+    host_port: 8080
+    protocol: tcp
+
+volumes:
+  - source: "./data"
+    target: "/usr/share/nginx/html"
+    mode: rw
+
+environment:
+  - APP_ENV=production
+  - DEBUG=false
+
+healthcheck:
+  path: "/"
+  interval: 30s
+  timeout: 5s
+  retries: 3
+
+replicas:
+  min: 2
+  max: 5

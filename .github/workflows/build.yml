@@ -1,0 +1,103 @@
+name: Build Budgie
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.21.6'
+
+jobs:
+  build:
+    name: Build binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build
+        run: |
+          VERSION=$(git describe --tags --always --dirty)
+          if [ "$VERSION" == "" ]; then
+            VERSION=v0.1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+          if [ "${{ matrix.goos }}" == "windows" ]; then
+            OUTPUT_NAME=budgie-${{ matrix.goos }}-${{ matrix.goarch }}.exe
+          else
+            OUTPUT_NAME=budgie-${{ matrix.goos }}-${{ matrix.goarch }}
+          fi
+
+          go build -ldflags="-s -w" -o bin/${OUTPUT_NAME} ./cmd/root/main.go
+          chmod +x bin/${OUTPUT_NAME} || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: budgie-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: bin/budgie-*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: bin/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: budgie-*
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false

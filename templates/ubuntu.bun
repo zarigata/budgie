@@ -1,0 +1,46 @@
+version: "1.0"
+name: "ubuntu-base"
+
+# Ubuntu LTS - Full-featured Linux container
+# Great for development and applications needing apt packages
+
+image:
+  docker_image: "ubuntu:24.04"
+  command: ["/bin/bash"]
+  workdir: "/app"
+
+ports:
+  - container_port: 8080
+    host_port: 8080
+    protocol: tcp
+  - container_port: 22
+    host_port: 2222
+    protocol: tcp
+
+volumes:
+  - source: "./data"
+    target: "/app/data"
+    mode: rw
+  - source: "./config"
+    target: "/etc/myapp"
+    mode: ro
+
+environment:
+  - "DEBIAN_FRONTEND=noninteractive"
+  - "TZ=UTC"
+  - "LANG=C.UTF-8"
+
+resources:
+  cpu_shares: 1024
+  memory_limit: 536870912  # 512MB
+  pids_limit: 200
+
+healthcheck:
+  path: "/health"
+  interval: 30s
+  timeout: 10s
+  retries: 3
+
+replicas:
+  min: 1
+  max: 5

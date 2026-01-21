@@ -1,0 +1,30 @@
+version: "1.0"
+name: "test-app-1"
+
+image:
+  docker_image: "alpine:latest"
+  command: ["/bin/sh", "-c", "while true; do sleep 1; done"]
+  workdir: "/app"
+
+ports:
+  - container_port: 8080
+    host_port: 8081
+    protocol: tcp
+
+volumes:
+  - source: "./test-data"
+    target: "/app/data"
+    mode: rw
+
+environment:
+  - "TEST_ENV=1"
+  - "APP_NAME=test-app-1"
+
+resources:
+  cpu_shares: 256
+  memory_limit: 67108864  # 64MB
+  pids_limit: 50
+
+replicas:
+  min: 1
+  max: 2
