@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7DD3C0"/>
+      <stop offset="100%" style="stop-color:#4ECDC4"/>
+    </linearGradient>
+    <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#45B7AA"/>
+      <stop offset="100%" style="stop-color:#2C9A8F"/>
+    </linearGradient>
+    <linearGradient id="headGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A8E6CF"/>
+      <stop offset="100%" style="stop-color:#7DD3C0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Body -->
+  <ellipse cx="100" cy="115" rx="45" ry="55" fill="url(#bodyGrad)"/>
+
+  <!-- Wing -->
+  <path d="M70 100 Q50 130 75 160 Q95 145 90 115 Z" fill="url(#wingGrad)"/>
+  <path d="M75 110 Q60 125 72 145" stroke="#2C9A8F" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M80 115 Q68 128 77 142" stroke="#2C9A8F" stroke-width="1.5" fill="none" opacity="0.4"/>
+
+  <!-- Head -->
+  <circle cx="105" cy="55" r="35" fill="url(#headGrad)"/>
+
+  <!-- Cheek patch -->
+  <ellipse cx="122" cy="60" rx="8" ry="10" fill="#FFE66D" opacity="0.8"/>
+
+  <!-- Eye -->
+  <circle cx="115" cy="50" r="8" fill="#2D3436"/>
+  <circle cx="117" cy="48" r="3" fill="#FFFFFF"/>
+
+  <!-- Beak -->
+  <path d="M135 55 Q145 60 140 70 Q135 65 130 62 Z" fill="#F9CA24"/>
+  <path d="M135 58 L140 65" stroke="#E67E22" stroke-width="1" opacity="0.5"/>
+
+  <!-- Head stripes (budgie pattern) -->
+  <path d="M85 35 Q90 30 100 28" stroke="#2C9A8F" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M82 42 Q88 36 98 34" stroke="#2C9A8F" stroke-width="2" fill="none" opacity="0.3"/>
+  <path d="M80 49 Q86 44 95 42" stroke="#2C9A8F" stroke-width="2" fill="none" opacity="0.2"/>
+
+  <!-- Tail -->
+  <path d="M85 165 Q75 185 80 195 Q90 190 95 170 Z" fill="url(#wingGrad)"/>
+  <path d="M95 165 Q88 185 93 195 Q100 190 102 170 Z" fill="#45B7AA"/>
+
+  <!-- Feet -->
+  <path d="M90 168 L85 180 M90 168 L90 182 M90 168 L95 180" stroke="#E67E22" stroke-width="3" stroke-linecap="round"/>
+  <path d="M110 168 L105 180 M110 168 L110 182 M110 168 L115 180" stroke="#E67E22" stroke-width="3" stroke-linecap="round"/>
+</svg>

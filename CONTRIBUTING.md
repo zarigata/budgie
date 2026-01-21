@@ -1,251 +1,80 @@
 # Contributing to Budgie
 
-Thank you for your interest in contributing to Budgie!
+First off, thank you for considering contributing to Budgie! It's people like you that make Budgie such a great tool.
 
-## 📋 How to Contribute
+We welcome any form of contribution, from reporting bugs and suggesting enhancements to submitting pull requests.
+
+## Code of Conduct
+
+This project and everyone participating in it is governed by the [Budgie Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [email@example.com](mailto:email@example.com).
+
+## How Can I Contribute?
 
 ### Reporting Bugs
 
-Before creating bug reports, please:
-1. Search for existing issues
-2. Include reproduction steps
-3. Provide system information:
-   - Budgie version: `budgie --version`
-   - OS and version
-   - Go version: `go version`
-   - Architecture (amd64/arm64)
+This is one of the most helpful ways you can contribute. Before creating a bug report, please check existing issues to see if someone has already reported it.
+
+When you create a bug report, please include as many details as possible:
+
+- A clear and descriptive title.
+- A step-by-step description of how to reproduce the bug.
+- The expected behavior and what actually happened.
+- Your system information (OS, Budgie version, etc.).
 
 ### Suggesting Enhancements
 
-1. Check the [roadmap](GITHUB_README.md#-roadmap) first
-2. Create a feature request with:
-   - Clear description of the feature
-   - Use cases and examples
-   - How it would benefit the project
+If you have an idea for a new feature or an improvement to an existing one, we'd love to hear it. Please create an issue with a clear description of your suggestion:
+
+- A clear and descriptive title.
+- A detailed description of the proposed enhancement.
+- The use case or problem that this enhancement would solve.
+- Any alternative solutions or features you've considered.
 
 ### Submitting Pull Requests
 
-#### Development Workflow
+If you'd like to contribute code to Budgie, you can do so by submitting a pull request.
 
-1. **Fork the repository**
-```bash
-gh repo fork budgie/budgie
-```
+1.  **Fork the repository** and create your branch from `main`.
+2.  **Make your changes** in a new git branch.
+3.  **Create a pull request** with a clear description of your changes.
+4.  **Ensure all tests pass** before submitting.
 
-2. **Clone your fork**
-```bash
-git clone https://github.com/YOUR_USERNAME/budgie.git
-cd budgie
-git remote add upstream https://github.com/budgie/budgie.git
-```
+#### Code Style
 
-3. **Create a feature branch**
-```bash
-git checkout -b feature/your-feature-name
-```
+- We follow the standard Go formatting (`gofmt`).
+- Write clear and concise comments for complex logic.
+- Keep functions small and focused on a single task.
 
-4. **Make your changes**
-   - Write clean code following style guidelines
-   - Add tests for new functionality
-   - Update documentation
+#### Commit Messages
 
-5. **Commit your changes**
-```bash
-git add .
-git commit -m "Add: your feature description"
-```
+- Use a descriptive commit message that explains the "what" and "why" of your changes.
+- Reference any related issues in your commit message (e.g., `Fixes #123`).
 
-Commit message format:
-- `Add: ` - Adding a new feature
-- `Fix: ` - Bug fix
-- `Update: ` - Update to dependencies/docs
-- `Refactor: ` - Code restructuring without functionality change
-- `Docs: ` - Documentation only
-- `Test: ` - Adding or updating tests
-- `Chore: ` - Maintenance tasks
+## Development Setup
 
-6. **Push to your fork**
-```bash
-git push origin feature/your-feature-name
-```
+To get started with Budgie development, you'll need:
 
-7. **Create a Pull Request**
-   - Go to GitHub and create PR
-   - Reference any related issues
-   - Describe your changes clearly
-   - Ensure tests pass
-
-#### Code Style Guidelines
-
-**Go Conventions:**
-- Follow [Effective Go](https://github.com/golang/go/wiki/CodeReviewComments)
-- Use `gofmt` for formatting: `make fmt`
-- Handle errors properly, don't panic in production code
-- Use meaningful variable names
-- Add comments for exported types and complex logic
-- Keep functions focused and small
-
-**Testing:**
-- Write unit tests for new functionality
-- Aim for good test coverage
-- Test edge cases
-- Use table-driven tests where appropriate
-
-**Documentation:**
-- Update README for user-facing changes
-- Add code comments for complex algorithms
-- Document new configuration options
-
-## 🏗️ Development Setup
-
-### Prerequisites
-
-- Go 1.21 or higher
-- containerd (for local testing)
+- Go (version 1.21 or later)
 - Git
 
-### Setting Up
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/zarigata/budgie.git
+    cd budgie
+    ```
+2.  Install the dependencies:
+    ```bash
+    go mod tidy
+    ```
+3.  Run the tests:
+    ```bash
+    make test
+    ```
+4.  Build the project:
+    ```bash
+    make build
+    ```
 
-```bash
-# Clone the repository
-git clone https://github.com/budgie/budgie.git
-cd budgie
+## License
 
-# Install dependencies
-go mod download
-
-# Run tests
-make test
-```
-
-### Project Structure
-
-```
-budgie/
-├── cmd/              # CLI commands (public API)
-│   ├── nest/        # Setup wizard
-│   ├── root/        # Root command (main entry point)
-│   ├── run/         # Container operations
-│   ├── ps/          # Container listing
-│   ├── stop/        # Container control
-│   └── chirp/       # Network discovery
-├── internal/         # Private code (not exported)
-│   ├── api/         # Container management
-│   ├── bundle/      # .bun file parsing
-│   ├── discovery/  # mDNS implementation
-│   ├── runtime/      # containerd integration
-│   ├── sync/         # File synchronization
-│   └── proxy/        # Load balancer
-└── pkg/             # Public packages
-    └── types/       # Shared types and utilities
-```
-
-### Testing
-
-Run all tests:
-```bash
-make test
-```
-
-Run specific test:
-```bash
-go test ./cmd/nest/...
-go test ./internal/...
-```
-
-Run with coverage:
-```bash
-go test -cover ./...
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
-```
-
-### Building
-
-Build for current platform:
-```bash
-make build
-```
-
-Build for all platforms:
-```bash
-./build-all.sh
-```
-
-## 🐛️ Troubleshooting Common Development Issues
-
-### Dependency Issues
-
-**Problem:** `go mod tidy` fails or dependencies don't download
-
-**Solution:**
-```bash
-# Clean module cache
-go clean -modcache
-
-# Re-download dependencies
-go mod tidy
-go mod download
-```
-
-### Build Errors
-
-**Problem:** Build fails on specific platform
-
-**Solution:**
-```bash
-# Check Go version
-go version
-
-# Update Go if needed
-# Install latest from https://go.dev/dl/
-
-# Clean and rebuild
-make clean
-make build
-```
-
-### Containerd Issues
-
-**Problem:** Cannot connect to containerd
-
-**Solution:**
-```bash
-# Check if containerd is running
-sudo systemctl status containerd  # Linux
-
-# Check socket path
-ls -la /run/containerd/containerd.sock
-
-# Start containerd if needed
-sudo systemctl start containerd  # Linux
-```
-
-## 📝 Project Resources
-
-- [Documentation](GITHUB_README.md)
-- [Roadmap](GITHUB_README.md#-roadmap)
-- [Issue Tracker](https://github.com/budgie/budgie/issues)
-- [Discussions](https://github.com/budgie/budgie/discussions)
-
-## 🎓 Learning Resources
-
-If you're new to the project:
-1. Read the [README.md](README.md) for an overview
-2. Run `budgie nest` to learn the system
-3. Check out the `.bun` file format examples
-4. Review existing issues and PRs
-
-## 💬 Community
-
-- Join our [Discord](https://discord.gg/budgie) for discussions
-- Follow us on [Twitter/X](https://twitter.com/budgie)
-- Subscribe to our [YouTube channel](https://youtube.com/@budgie)
-
-## 📜 License
-
-By contributing to Budgie, you agree that your contributions will be licensed under the [MIT License](LICENSE).
-
----
-
-Thank you for contributing to Budgie! 🐦
+By contributing to Budgie, you agree that your contributions will be licensed under its MIT License.

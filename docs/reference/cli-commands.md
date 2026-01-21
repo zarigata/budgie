@@ -1,165 +1,66 @@
-# CLI Commands Reference
+# CLI Commands
 
-Complete reference for all Budgie CLI commands.
+This page provides a reference for all the available Budgie CLI commands.
 
-## Global Flags
+## `budgie run`
 
-Available on all commands:
+Starts a container from a `.bun` file.
 
-| Flag | Description |
-|------|-------------|
-| `--help`, `-h` | Show help for command |
-| `--version`, `-v` | Show version information |
-
-## Commands
-
-### budgie run
-
-Run a container from a bun file.
-
+**Usage:**
 ```bash
-budgie run [flags] <bundle.bun>
+budgie run <file.bun>
 ```
 
-**Flags:**
-| Flag | Description |
-|------|-------------|
-| `--detach`, `-d` | Run in background |
-| `--name` | Override container name |
+**Arguments:**
+- `<file.bun>`: The path to the `.bun` file.
 
-**Examples:**
+## `budgie ps`
+
+Lists all running containers.
+
+**Usage:**
 ```bash
-# Run interactively
-budgie run myapp.bun
-
-# Run in background
-budgie run --detach myapp.bun
-
-# Run with custom name
-budgie run --name webserver nginx.bun
-```
-
-### budgie ps
-
-List containers.
-
-```bash
-budgie ps [flags]
-```
-
-**Flags:**
-| Flag | Description |
-|------|-------------|
-| `--all`, `-a` | Show all containers (including stopped) |
-| `--quiet`, `-q` | Only show container IDs |
-
-**Examples:**
-```bash
-# List running containers
 budgie ps
-
-# List all containers
-budgie ps --all
-
-# List only IDs
-budgie ps -q
-```
-
-### budgie stop
-
-Stop a running container.
-
-```bash
-budgie stop [flags] <container-id>
 ```
 
 **Flags:**
-| Flag | Description |
-|------|-------------|
-| `--timeout`, `-t` | Timeout before force kill (default: 10s) |
+- `--all`, `-a`: Show all containers, including stopped ones.
 
-**Examples:**
+## `budgie stop`
+
+Gracefully stops a container.
+
+**Usage:**
 ```bash
-# Stop with default timeout
-budgie stop abc123
-
-# Stop with 30 second timeout
-budgie stop --timeout 30s abc123
+budgie stop <id>
 ```
 
-### budgie chirp
+**Arguments:**
+- `<id>`: The ID of the container to stop.
 
-Discover containers on network or join as peer.
+## `budgie chirp`
 
-```bash
-budgie chirp [container-id]
-```
+Discovers containers on the local network or joins a container as a replica.
 
-**Without arguments:** Lists all discoverable containers on the local network.
-
-**With container ID:** Joins that container as a peer/replica.
-
-**Examples:**
+**Usage:**
 ```bash
 # Discover containers
 budgie chirp
 
-# Join container as peer
-budgie chirp abc123456789
+# Join as a replica
+budgie chirp <id>
 ```
 
-**Aliases:** `discover`
+**Arguments:**
+- `<id>` (optional): The ID of the container to join as a replica.
 
-### budgie nest
+## `budgie nest`
 
-Interactive setup and build wizard.
+Starts an interactive setup wizard.
 
+**Usage:**
 ```bash
 budgie nest
 ```
 
-Launches the interactive TUI for:
-- System detection
-- Platform selection
-- Tutorials
-- Container monitoring
-- Dependency checking
-
-**Aliases:** `setup`, `wizard`, `init`
-
-## Container ID
-
-Most commands accept either:
-- Full 64-character container ID
-- Short 12-character prefix
-
-```bash
-# Both work
-budgie stop abc123456789012345678901234567890123456789012345678901234567890123
-budgie stop abc123456789
-```
-
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Command not found |
-| 3 | Container not found |
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `CONTAINERD_ADDRESS` | containerd socket path (default: `/run/containerd/containerd.sock`) |
-| `BUDGIE_LOG_LEVEL` | Log level: debug, info, warn, error |
-
-## Configuration
-
-Budgie reads configuration from:
-1. Command line flags (highest priority)
-2. Environment variables
-3. Config file (if present)
-
-Default config location: `~/.config/budgie/config.yaml`
+This command will guide you through the process of creating a `.bun` file and running a container.

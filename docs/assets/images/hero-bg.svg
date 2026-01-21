@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 600">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F5F3"/>
+      <stop offset="50%" style="stop-color:#D4EDE8"/>
+      <stop offset="100%" style="stop-color:#B8E0D8"/>
+    </linearGradient>
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF"/>
+      <stop offset="100%" style="stop-color:#F0F9F7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1440" height="600" fill="url(#skyGrad)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="150" fill="#4ECDC4" opacity="0.1"/>
+  <circle cx="1350" cy="450" r="200" fill="#7DD3C0" opacity="0.1"/>
+  <circle cx="700" cy="50" r="100" fill="#A8E6CF" opacity="0.1"/>
+
+  <!-- Clouds -->
+  <g fill="url(#cloudGrad)" opacity="0.8">
+    <ellipse cx="200" cy="150" rx="80" ry="40"/>
+    <ellipse cx="250" cy="140" rx="60" ry="35"/>
+    <ellipse cx="150" cy="145" rx="50" ry="30"/>
+  </g>
+
+  <g fill="url(#cloudGrad)" opacity="0.6">
+    <ellipse cx="1100" cy="100" rx="100" ry="45"/>
+    <ellipse cx="1160" cy="90" rx="70" ry="40"/>
+    <ellipse cx="1040" cy="95" rx="60" ry="35"/>
+  </g>
+
+  <g fill="url(#cloudGrad)" opacity="0.5">
+    <ellipse cx="600" cy="200" rx="70" ry="35"/>
+    <ellipse cx="650" cy="195" rx="50" ry="30"/>
+  </g>
+
+  <!-- Abstract connection lines (representing distributed systems) -->
+  <g stroke="#4ECDC4" stroke-width="2" fill="none" opacity="0.3">
+    <path d="M100 500 Q300 400 500 450 T900 400 T1300 500"/>
+    <path d="M0 550 Q200 450 400 500 T800 450 T1200 550 T1440 500"/>
+  </g>
+
+  <!-- Dots representing nodes -->
+  <g fill="#4ECDC4" opacity="0.4">
+    <circle cx="100" cy="500" r="8"/>
+    <circle cx="300" cy="430" r="6"/>
+    <circle cx="500" cy="450" r="10"/>
+    <circle cx="700" cy="420" r="7"/>
+    <circle cx="900" cy="400" r="9"/>
+    <circle cx="1100" cy="440" r="6"/>
+    <circle cx="1300" cy="500" r="8"/>
+  </g>
+</svg>

@@ -1,69 +1,76 @@
-# Budgie - Distributed Container Orchestration
+<p align="center">
+  <img src="docs/assets/images/logo.svg" alt="Budgie Logo" width="120" height="120">
+</p>
 
-Budgie is a distributed container orchestration tool that simplifies running and replicating containers across machines in a local network.
+<h1 align="center">Budgie</h1>
 
-## Version
+<p align="center">
+  <strong>Simple, distributed container orchestration for your local network.</strong><br>
+  Lightweight like its namesake, but handles discovery, replication, and load balancing without Kubernetes complexity.
+</p>
 
-**v0.1** - Initial release
+<p align="center">
+  <a href="https://github.com/zarigata/budgie/releases"><img src="https://img.shields.io/github/v/release/zarigata/budgie?style=flat-square&color=14B8A6" alt="Release"></a>
+  <a href="https://github.com/zarigata/budgie/blob/main/LICENSE"><img src="https://img.shields.io/github/license/zarigata/budgie?style=flat-square&color=14B8A6" alt="License"></a>
+  <a href="https://github.com/zarigata/budgie/stargazers"><img src="https://img.shields.io/github/stars/zarigata/budgie?style=flat-square&color=14B8A6" alt="Stars"></a>
+  <a href="https://github.com/zarigata/budgie/issues"><img src="https://img.shields.io/github/issues/zarigata/budgie?style=flat-square&color=14B8A6" alt="Issues"></a>
+  <a href="https://goreportcard.com/report/github.com/zarigata/budgie"><img src="https://goreportcard.com/badge/github.com/zarigata/budgie?style=flat-square" alt="Go Report Card"></a>
+</p>
 
-## Features
+<p align="center">
+  <a href="https://zarigata.github.io/budgie/">Website</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-architecture-at-a-glance">Architecture</a> •
+  <a href="#-documentation">Docs</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
 
-- **Simple CLI**: Run containers with `budgie run example.bun`
-- **LAN Discovery**: Find containers on local network with `budgie chirp`
-- **Easy Replication**: Join a container as a peer with `budgie chirp <container-id>`
-- **Load Balancing**: Port-based routing with automatic failover
-- **Data Sync**: Automatic file synchronization across replicas
-- **Interactive Setup**: `budgie nest` - wizard for new users and builders
+---
 
-## Installation
+<p align="center">
+  <img src="docs/assets/images/terminal-demo.svg" alt="Budgie Terminal Demo" width="700">
+</p>
 
-### Quick Install (Pre-built Binaries)
+## 🤔 Why Budgie?
 
-If you have pre-built binaries, run the installer:
+Kubernetes power feels heavy on a local network. Budgie keeps it simple: a single binary that runs, discovers, replicates, and balances containers across your LAN with human-readable `.bun` files.
 
-**Linux/macOS:**
+Perfect for:
+- 🏠 **Home labs** and self-hosted setups
+- 🔧 **Dev environments** spanning multiple machines
+- 🏢 **Small team deployments** on local infra
+- 📚 **Learning** distributed systems concepts
+
+## ✨ Features
+
+- 🔍 **LAN discovery** via mDNS — no manual IPs.
+- 📦 **Readable `.bun` YAML** for images, ports, volumes, env, health checks, replicas.
+- 🔄 **Volume sync** with rsync-style delta transfer and fsnotify watching.
+- ⚖️ **Built-in reverse proxy** with round-robin & least-connections + health checks.
+- 🐦 **Chirp** to list or join peers on the LAN.
+- 🛠️ **Containerd-backed runtime** for reliable lifecycle management.
+
+## 🚀 Quick Start
+
+### Installation
+
+**Linux / macOS:**
 ```bash
-sudo ./install.sh
+curl -fsSL https://zarigata.github.io/budgie/install.sh | sudo bash
 ```
 
-**Windows:**
+**Windows (PowerShell as Admin):**
 ```powershell
-.\install.ps1
+irm https://zarigata.github.io/budgie/install.ps1 | iex
 ```
 
-### Build from Source
+### Your First Container
 
-```bash
-# Build for current platform
-make build
-
-# Build for all platforms (requires Go 1.21+)
-./build-all.sh
-
-# Or manually:
-make build-all
-```
-
-### Using Nest Wizard
-
-For first-time setup or building for different platforms:
-```bash
-budgie nest
-```
-
-The wizard will:
-- Detect your system (OS and architecture)
-- Guide you through installation
-- Help you choose build targets
-- Teach you how to use budgie
-- Check system compatibility
-
-## Quick Start
-
-### 1. Create a .bun file
+1. **Create a `.bun` file:**
 
 ```yaml
-# example.bun
+# webapp.bun
 version: "1.0"
 name: "webapp"
 
@@ -73,207 +80,88 @@ image:
 ports:
   - container_port: 80
     host_port: 8080
-    protocol: tcp
-
-volumes:
-  - source: "./data"
-    target: "/app/data"
-    mode: rw
-
-environment:
-  - APP_ENV=production
-
-healthcheck:
-  path: "/health"
-  interval: 30s
-  timeout: 5s
-  retries: 3
-
-replicas:
-  min: 2
-  max: 5
 ```
 
-### 2. Run a container
+2. **Run it:**
 
 ```bash
-budgie run example.bun
+budgie run webapp.bun
 ```
 
-### 3. Discover containers on LAN
+3. **Discover containers on your network:**
 
 ```bash
 budgie chirp
 ```
 
-### 4. Join as replica
+4. **(Optional) Join a peer:**
 
 ```bash
-budgie chirp abc123456789def
+budgie chirp <container-id>
 ```
 
-### 5. List local containers
+> Need a full example? See [`example.bun`](example.bun).
+
+## 🧭 Architecture at a glance
+
+- **CLI** (`cmd/`): `run`, `ps`, `stop`, `chirp`, plus root command wiring.
+- **Runtime** (`internal/runtime`): containerd wrapper for pull, create, start/stop, status.
+- **Discovery** (`internal/discovery`): mDNS announce/discover with TXT metadata.
+- **Sync** (`internal/sync`): rsync-style delta sync + fsnotify volume watching.
+- **Proxy** (`internal/proxy`): HTTP reverse proxy with round-robin & least-connections.
+- **Bundle** (`internal/bundle`): `.bun` parser and validation.
+- **Types** (`pkg/types`): shared data structures.
+
+## 🧰 Core commands
 
 ```bash
-budgie ps
+budgie run <file.bun>      # Start containers from a .bun spec
+budgie ps                  # List running containers
+budgie stop <id>           # Stop a container
+budgie chirp               # Discover containers on your LAN
+budgie chirp <id>          # Join a peer (for replication workflows)
 ```
 
-## Available Binaries
+## 📂 Data directory
 
-Pre-built binaries are available for:
-- **Linux**: `budgie-linux-amd64` or `budgie-linux-arm64`
-- **macOS**: `budgie-darwin-amd64` (Intel) or `budgie-darwin-arm64` (Apple Silicon)
-- **Windows**: `budgie-windows-amd64.exe` or `budgie-windows-arm64.exe`
+- Default: `/var/lib/budgie/`
+- Override: set `BUDGIE_DATA_DIR`
 
-Download the binary matching your system, make it executable (Linux/macOS), and run it.
+State persists container metadata and lifecycle info.
 
-## Installation Scripts
-
-### `install.sh` (Linux/macOS)
-- Detects platform automatically
-- Copies binary to `/usr/local/bin/`
-- Creates configuration in `/etc/budgie/config.yaml`
-- Sets up data directory `/var/lib/budgie/`
-- Creates log directory `/var/log/budgie/`
-
-### `install.ps1` (Windows)
-- Installs to `%LOCALAPPDATA%\budgie`
-- Adds to user PATH
-- Creates desktop shortcut
-- Generates configuration file
-
-## Build Scripts
-
-### `build-all.sh`
-Cross-platform build script that:
-- Builds for Linux (amd64, arm64)
-- Builds for macOS (amd64, arm64)
-- Builds for Windows (amd64, arm64)
-- Creates tar.gz packages for Linux/macOS
-- Creates zip packages for Windows
-- Optimized binaries with `-ldflags="-s -w"`
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `budgie run <file.bun>` | Run a container from .bun file |
-| `budgie ps` | List all containers |
-| `budgie stop <id>` | Stop a running container |
-| `budgie chirp` | Discover containers on local network |
-| `budgie chirp <id>` | Join a container as replica |
-| `budgie nest` | Interactive setup and build wizard |
-
-## Nest Wizard
-
-The `budgie nest` command provides an interactive wizard for:
-
-### 1. Quick Start 🚀
-- Downloads Go modules
-- Builds budgie for your system
-- Shows next steps
-
-### 2. Custom Build 🔨
-- Choose target platform (Linux/macOS/Windows)
-- Choose architecture (amd64/arm64)
-- Build for single platform or all platforms
-
-### 3. Learn Budgie 📚
-- Running your first container
-- Discovering containers on LAN
-- Container replication
-- Managing containers
-
-### 4. System Check 🏥️
-- Detects OS and architecture
-- Checks Go version
-- Verifies dependencies
-- Shows compatibility status
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      budgie CLI                           │
-│  ┌────────────┐  ┌──────────────┐  ┌──────────────┐   │
-│  │   run      │  │    chirp      │  │   ps/list    │   │
-│  └─────┬──────┘  └──────┬───────┘  └──────┬───────┘   │
-└────────┼────────────────┼──────────────────┼───────────────┘
-         │                │                  │
-         ▼                ▼                  ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Budgie Daemon                          │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Container Manager  │  Node Discovery  │  Sync   │  │
-│  └──────────────────┴─────────────────┴──────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Technology Stack
-
-- **Language**: Go 1.21+
-- **CLI**: github.com/spf13/cobra
-- **Container Runtime**: containerd
-- **Service Discovery**: mDNS (hashicorp/mdns)
-- **File Sync**: rsync algorithm (minio/rsync-go)
-- **Load Balancing**: HTTP reverse proxy with round-robin
-
-## Project Structure
-
-```
-budgie/
-├── cmd/                # CLI commands
-│   ├── root/          # Root command
-│   ├── run/           # run command
-│   ├── ps/            # ps command
-│   └── chirp/         # chirp command
-├── internal/           # Private application code
-│   ├── api/           # HTTP/gRPC API
-│   ├── bundle/        # .bun file parser
-│   ├── cluster/       # Cluster management
-│   ├── discovery/     # mDNS service discovery
-│   ├── runtime/       # Container runtime wrapper
-│   ├── sync/          # File synchronization
-│   └── proxy/         # Load balancer proxy
-├── pkg/               # Public libraries
-│   └── types/        # Core data structures
-├── go.mod
-├── go.sum
-├── Makefile
-└── README.md
-```
-
-## Development
+## 🛠️ Build & install
 
 ```bash
-# Install dependencies
-make mod-tidy
-
-# Run tests
-make test
-
-# Format code
-make fmt
-
-# Build for current platform
-make build
-
-# Build for all platforms
-make build-all
+make build    # build binary
+make install  # install to PATH
 ```
 
-## Roadmap
+## 📖 Documentation
 
-- [x] Project structure
-- [x] Basic CLI framework
-- [ ] .bun file parser
-- [ ] Container runtime integration
-- [ ] Container lifecycle management
-- [ ] mDNS service discovery
-- [ ] File synchronization
-- [ ] Load balancing
-- [ ] Advanced networking (DNS)
+| Guide | Description |
+|-------|-------------|
+| [Quick Start](https://zarigata.github.io/budgie/getting-started/quick-start) | Get up and running in minutes |
+| [Installation](https://zarigata.github.io/budgie/getting-started/installation) | Detailed installation instructions |
+| [.bun File Format](https://zarigata.github.io/budgie/guides/bun-file-format) | Complete configuration reference |
+| [Discovery & Replication](https://zarigata.github.io/budgie/guides/discovery-replication) | How containers find each other |
+| [CLI Reference](https://zarigata.github.io/budgie/reference/cli-commands) | All available commands |
 
-## License
+## 🤝 Contributing
 
-MIT License - See LICENSE file for details
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## 📜 License
+
+Budgie is open-source software licensed under the [MIT License](LICENSE).
+
+---
+
+<p align="center">
+  <a href="https://github.com/zarigata/budgie">
+    <img src="https://img.shields.io/github/stars/zarigata/budgie?style=social" alt="Star on GitHub">
+  </a>
+</p>
+
+<p align="center">
+  Built with ❤️ by the <a href="https://github.com/zarigata/budgie/graphs/contributors">Budgie community</a>
+</p>

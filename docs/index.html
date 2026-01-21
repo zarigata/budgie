@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budgie - Simple, Distributed Container Orchestration</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" href="assets/images/logo.svg" type="image/svg+xml">
+    <script>
+        // Cursor trail effect
+        document.addEventListener('DOMContentLoaded', function() {
+            let trail = [];
+            for (let i = 0; i < 10; i++) {
+                let dot = document.createElement('div');
+                dot.className = 'cursor-trail';
+                dot.style.backgroundImage = "url('assets/images/logo.svg')";
+                document.body.appendChild(dot);
+                trail.push(dot);
+            }
+            let pos = 0;
+            document.addEventListener('mousemove', function(e) {
+                trail[pos].style.left = (e.pageX - 10) + 'px';
+                trail[pos].style.top = (e.pageY - 10) + 'px';
+                pos = (pos + 1) % trail.length;
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="retro-grid" aria-hidden="true"></div>
+    <div class="retro-glow" aria-hidden="true"></div>
+    <div class="floating-budgies" aria-hidden="true">
+        <span>🐤</span><span>🪶</span><span>🐦</span><span>🌈</span><span>🐤</span><span>⭐</span>
+    </div>
+
+    <!-- Visitor counter -->
+    <div class="visitor-counter">Visitors: <span id="counter">00001</span></div>
+
+    <!-- Animated marquee -->
+    <div class="marquee">
+        <marquee behavior="scroll" direction="left">
+            🐦 Budgie 1.0 is chirping across your LAN • simple `.bun` configs • zero-fuss discovery • try `budgie chirp` today 🐦
+        </marquee>
+    </div>
+
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="assets/images/logo.svg" alt="Budgie Logo" class="blink">
+                <span class="logo-wordmark">Budgie</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#quick-start">Quick Start</a></li>
+                <li><a href="#documentation">Documentation</a></li>
+                <li><a href="https://github.com/zarigata/budgie" target="_blank">GitHub</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero">
+            <div class="hero-content">
+                <h1>Simple, Distributed Container Orchestration</h1>
+                <p>Budgie is a lightweight tool for running, discovering, and replicating containers on your local network. No complex setup, just simple `.bun` files.</p>
+                <div class="hero-buttons">
+                    <a href="#quick-start" class="btn btn-primary">Get Started</a>
+                    <a href="https://github.com/zarigata/budgie" class="btn btn-secondary" target="_blank">View on GitHub</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="assets/images/hero-bg.svg" alt="Budgie Hero Image">
+            </div>
+        </section>
+
+        <section id="features">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <img src="assets/images/icon-discovery.svg" alt="Discovery Icon">
+                    <h3>LAN Discovery</h3>
+                    <p>Automatically discover containers on your local network using mDNS. No manual IP configuration needed.</p>
+                </div>
+                <div class="feature-card">
+                    <img src="assets/images/icon-container.svg" alt="Container Icon">
+                    <h3>Simple Config</h3>
+                    <p>Define containers with readable YAML `.bun` files. Ports, volumes, health checks—all in one place.</p>
+                </div>
+                <div class="feature-card">
+                    <img src="assets/images/icon-sync.svg" alt="Sync Icon">
+                    <h3>Data Sync</h3>
+                    <p>Automatically synchronize volumes across replicas using an efficient rsync-style algorithm.</p>
+                </div>
+                <div class="feature-card">
+                    <img src="assets/images/icon-loadbalance.svg" alt="Load Balance Icon">
+                    <h3>Load Balancing</h3>
+                    <p>Built-in HTTP reverse proxy with round-robin and least-connections algorithms. Health checks included.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="quick-start">
+            <h2>Quick Start</h2>
+            <div class="quick-start-steps">
+                <div class="step">
+                    <h3>1. Install Budgie</h3>
+                    <p>Linux / macOS:</p>
+                    <pre><code>curl -fsSL https://zarigata.github.io/budgie/install.sh | sudo bash</code></pre>
+                    <p>Windows (PowerShell as Admin):</p>
+                    <pre><code>irm https://zarigata.github.io/budgie/install.ps1 | iex</code></pre>
+                </div>
+                <div class="step">
+                    <h3>2. Create a .bun file</h3>
+                    <pre><code>
+# webapp.bun
+version: "1.0"
+name: "webapp"
+
+image:
+  docker_image: "nginx:alpine"
+
+ports:
+  - container_port: 80
+    host_port: 8080
+                    </code></pre>
+                </div>
+                <div class="step">
+                    <h3>3. Run it</h3>
+                    <pre><code>budgie run webapp.bun</code></pre>
+                </div>
+                <div class="step">
+                    <h3>4. Discover it</h3>
+                    <pre><code>budgie chirp</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="documentation">
+            <h2>Documentation</h2>
+            <div class="docs-grid">
+                <a href="getting-started/quick-start.html" class="doc-card">
+                    <h4>Quick Start Guide</h4>
+                    <p>Get up and running in minutes.</p>
+                </a>
+                <a href="guides/bun-file-format.html" class="doc-card">
+                    <h4>.bun File Format</h4>
+                    <p>Complete configuration reference.</p>
+                </a>
+                <a href="reference/cli-commands.html" class="doc-card">
+                    <h4>CLI Reference</h4>
+                    <p>All available commands.</p>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Budgie. All rights reserved.</p>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

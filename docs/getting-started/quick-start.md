@@ -1,108 +1,92 @@
 # Quick Start
 
-Get up and running with Budgie in minutes.
+This guide will walk you through the basics of using Budgie to run and manage containers on your local network.
 
-## Your First Container
+## 1. Installation
 
-### 1. Create a Bundle File
+First, you need to install the Budgie CLI.
 
-Create a file named `myapp.bun`:
+**Linux / macOS:**
+```bash
+curl -fsSL https://zarigata.github.io/budgie/install.sh | sudo bash
+```
+
+**Windows (PowerShell as Admin):**
+```powershell
+irm https://zarigata.github.io/budgie/install.ps1 | iex
+```
+
+## 2. Create a `.bun` file
+
+Budgie uses `.bun` files to define containers. Create a file named `webapp.bun` with the following content:
 
 ```yaml
 version: "1.0"
-name: "myapp"
+name: "webapp"
 
 image:
   docker_image: "nginx:alpine"
-  workdir: "/usr/share/nginx/html"
 
 ports:
   - container_port: 80
     host_port: 8080
-    protocol: tcp
 
-environment:
-  - "NGINX_HOST=localhost"
+volumes:
+  - source: "./html"
+    target: "/usr/share/nginx/html"
+    mode: rw
+
+healthcheck:
+  path: "/"
+  interval: 30s
+  timeout: 5s
+  retries: 3
+
+replicas:
+  min: 2
+  max: 5
 ```
 
-### 2. Run the Container
+This file defines a simple `nginx` container with a port mapping, a volume, a health check, and a replication policy.
+
+## 3. Run the container
+
+Now, you can run the container using the `budgie run` command:
 
 ```bash
-budgie run myapp.bun
+budgie run webapp.bun
 ```
 
-### 3. Access Your Application
+Budgie will pull the `nginx:alpine` image if it's not already present on your system and start the container in the background.
 
-Open your browser to `http://localhost:8080`
+## 4. Discover the container
 
-## Running in Background
-
-Use the `--detach` flag to run containers in the background:
-
-```bash
-budgie run --detach myapp.bun
-```
-
-## Listing Containers
-
-```bash
-# List running containers
-budgie ps
-
-# List all containers (including stopped)
-budgie ps --all
-```
-
-## Stopping Containers
-
-```bash
-# Stop gracefully (waits for SIGTERM)
-budgie stop <container-id>
-
-# Stop with custom timeout
-budgie stop --timeout 30s <container-id>
-```
-
-## Discovering Containers on Network
-
-Use chirp to find Budgie containers on your local network:
+You can use the `budgie chirp` command to discover all running Budgie containers on your local network:
 
 ```bash
 budgie chirp
 ```
 
-Output:
-```
-CONTAINER ID   NAME     IP            PORT   IMAGE                  NODE
-abc123456789   myapp    192.168.1.5   8080   nginx:alpine          laptop
-def987654321   webapp   192.168.1.6   3000   node:18-alpine        desktop
-```
+This will output a list of all discovered containers, including their ID, name, image, and IP address.
 
-## Joining a Container as Peer
+## 5. Join as a replica
 
-To replicate a container on your machine:
+If you have another machine on the same network, you can join it to the `webapp` service as a replica. Simply run the following command on the second machine, replacing `<id>` with the ID of the `webapp` container you discovered in the previous step:
 
 ```bash
-budgie chirp abc123
+budgie chirp <id>
 ```
 
-This downloads the image and synchronizes volume data.
+Budgie will automatically pull the `nginx:alpine` image and start a new container on the second machine. The two containers will be part of the same service and will synchronize their volumes.
 
-## Interactive Setup
+## 6. Stop the container
 
-For an interactive experience, use the nest command:
+To stop a container, use the `budgie stop` command with the container ID:
 
 ```bash
-budgie nest
+budgie stop <id>
 ```
 
-This launches a TUI wizard that guides you through:
-- System detection
-- Platform selection
-- Tutorials and documentation
+This will gracefully stop the container.
 
-## Next Steps
-
-- Learn about [resource limits](../guides/resource-limits.md)
-- Understand [discovery and replication](../guides/discovery-replication.md)
-- Explore the [bun file format](../guides/bun-file-format.md)
+That's it! You have now successfully run, discovered, and replicated a container using Budgie. For more detailed information, please refer to the other documentation guides.
