@@ -57,12 +57,12 @@ Perfect for:
 
 **Linux / macOS:**
 ```bash
-curl -fsSL https://zarigata.github.io/budgie/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/zarigata/budgie/main/install.sh | sudo bash
 ```
 
 **Windows (PowerShell as Admin):**
 ```powershell
-irm https://zarigata.github.io/budgie/install.ps1 | iex
+irm https://raw.githubusercontent.com/zarigata/budgie/main/install.ps1 | iex
 ```
 
 ### Your First Container
