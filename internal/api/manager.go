@@ -6,36 +6,38 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/zarigata/budgie/internal/runtime"
+	budgieruntime "github.com/zarigata/budgie/internal/runtime"
 	"github.com/zarigata/budgie/pkg/types"
 )
 
 type ContainerManager struct {
-	runtime  runtime.Runtime
+	runtime    budgieruntime.Runtime
 	containers map[string]*types.Container
-	mu        sync.RWMutex
-	statePath string
+	mu         sync.RWMutex
+	statePath  string
+	dataDir    string
 }
 
-func NewContainerManager(rt runtime.Runtime, dataDir string) (*ContainerManager, error) {
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+func NewContainerManager(rt budgieruntime.Runtime, dataDir string) (*ContainerManager, error) {
+	// Use more restrictive permissions for data directory
+	if err := os.MkdirAll(dataDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 
 	cm := &ContainerManager{
-		runtime:   rt,
+		runtime:    rt,
 		containers: make(map[string]*types.Container),
 		statePath:  filepath.Join(dataDir, "state.json"),
+		dataDir:    dataDir,
 	}
 
 	if err := cm.loadState(); err != nil {
-		logrus.Warnf("Failed to load state: %v", err)
+		logrus.Warnf("Failed to load state (starting fresh): %v", err)
 	}
 
 	return cm, nil
@@ -57,7 +59,9 @@ func (m *ContainerManager) Create(ctx context.Context, ctr *types.Container) err
 	m.containers[ctr.ID] = ctr
 
 	if err := m.saveState(); err != nil {
-		logrus.Warnf("Failed to save state: %v", err)
+		logrus.Errorf("Failed to persist container state: %v (container was created but state may be lost on restart)", err)
+		// Don't return error since the container was created successfully
+		// but log at ERROR level so it's visible
 	}
 
 	return nil
@@ -84,7 +88,7 @@ func (m *ContainerManager) Start(ctx context.Context, id string) error {
 	ctr.StartedAt = time.Now()
 
 	if err := m.saveState(); err != nil {
-		logrus.Warnf("Failed to save state: %v", err)
+		logrus.Errorf("Failed to persist container state: %v (container was started but state may be lost on restart)", err)
 	}
 
 	return nil
@@ -111,7 +115,7 @@ func (m *ContainerManager) Stop(ctx context.Context, id string, timeout time.Dur
 	ctr.ExitedAt = time.Now()
 
 	if err := m.saveState(); err != nil {
-		logrus.Warnf("Failed to save state: %v", err)
+		logrus.Errorf("Failed to persist container state: %v (container was stopped but state may be lost on restart)", err)
 	}
 
 	return nil
@@ -137,7 +141,7 @@ func (m *ContainerManager) Remove(ctx context.Context, id string) error {
 	delete(m.containers, id)
 
 	if err := m.saveState(); err != nil {
-		logrus.Warnf("Failed to save state: %v", err)
+		logrus.Errorf("Failed to persist container state: %v (container was removed but state may be inconsistent on restart)", err)
 	}
 
 	return nil

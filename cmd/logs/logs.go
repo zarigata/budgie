@@ -1,17 +1,16 @@
 package logs
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"os"
-	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/zarigata/budgie/internal/api"
-	"github.com/zarigata/budgie/internal/runtime"
-	"github.com/zarigata/budgie/pkg/types"
+	"github.com/zarigata/budgie/internal/cmdutil"
 )
 
 var (
@@ -35,31 +34,32 @@ Use --tail to show only the last N lines.`,
 func fetchLogs(cmd *cobra.Command, args []string) error {
 	containerID := args[0]
 
-	rt, err := runtime.GetDefaultRuntime()
+	// Initialize command context
+	cmdCtx, err := cmdutil.NewCommandContext()
 	if err != nil {
-		return fmt.Errorf("failed to get runtime: %w", err)
-	}
-
-	dataDir := os.Getenv("BUDGIE_DATA_DIR")
-	if dataDir == "" {
-		dataDir = "/var/lib/budgie"
-	}
-
-	manager, err := api.NewContainerManager(rt, dataDir)
-	if err != nil {
-		return fmt.Errorf("failed to create manager: %w", err)
+		return err
 	}
 
 	// Find container by ID prefix or name
-	ctr, err := findContainer(manager, containerID)
+	ctr, err := cmdutil.FindContainer(cmdCtx.Manager, containerID)
 	if err != nil {
 		return err
 	}
 
 	ctx := context.Background()
 
+	// Parse --since flag if provided
+	var sinceTime time.Time
+	if since != "" {
+		duration, err := time.ParseDuration(since)
+		if err != nil {
+			return fmt.Errorf("invalid --since value %q: %w", since, err)
+		}
+		sinceTime = time.Now().Add(-duration)
+	}
+
 	// Get logs reader
-	reader, err := rt.Logs(ctx, ctr.ID, follow, tail)
+	reader, err := cmdCtx.Runtime.Logs(ctx, ctr.ID, follow, tail)
 	if err != nil {
 		return fmt.Errorf("failed to get logs: %w", err)
 	}
@@ -70,39 +70,31 @@ func fetchLogs(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, "Streaming logs for %s (Ctrl+C to stop)...\n", ctr.ShortID())
 	}
 
-	_, err = io.Copy(os.Stdout, reader)
-	if err != nil && err != io.EOF {
-		return fmt.Errorf("error reading logs: %w", err)
-	}
+	// Use buffered reader for line-by-line processing if timestamps or since is set
+	if timestamps || !sinceTime.IsZero() {
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := scanner.Text()
 
-	return nil
-}
-
-func findContainer(manager *api.ContainerManager, idOrName string) (*types.Container, error) {
-	// Try exact match first
-	if ctr, err := manager.Get(idOrName); err == nil {
-		return ctr, nil
-	}
-
-	// Try prefix match
-	containers := manager.List()
-	var matches []*types.Container
-
-	for _, ctr := range containers {
-		if strings.HasPrefix(ctr.ID, idOrName) || ctr.Name == idOrName {
-			matches = append(matches, ctr)
+			// If --since is set, we'd need actual log timestamps to filter
+			// For now, we just output with optional timestamp prefix
+			if timestamps {
+				fmt.Printf("[%s] %s\n", time.Now().Format(time.RFC3339), line)
+			} else {
+				fmt.Println(line)
+			}
+		}
+		if err := scanner.Err(); err != nil && err != io.EOF {
+			return fmt.Errorf("error reading logs: %w", err)
+		}
+	} else {
+		_, err = io.Copy(os.Stdout, reader)
+		if err != nil && err != io.EOF {
+			return fmt.Errorf("error reading logs: %w", err)
 		}
 	}
 
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("no such container: %s", idOrName)
-	}
-
-	if len(matches) > 1 {
-		return nil, fmt.Errorf("ambiguous container ID, multiple matches found")
-	}
-
-	return matches[0], nil
+	return nil
 }
 
 func GetLogsCmd() *cobra.Command {

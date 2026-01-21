@@ -28,12 +28,24 @@ type Runtime interface {
 	Status(ctx context.Context, id string) (string, error)
 	Logs(ctx context.Context, id string, follow bool, tail int) (LogReader, error)
 	Exec(ctx context.Context, id string, cmd []string, stdin bool) (int, error)
+	ExecWithOptions(ctx context.Context, id string, opts ExecOptions) (int, error)
 }
 
 // LogReader provides access to container logs
 type LogReader interface {
 	Read(p []byte) (n int, err error)
 	Close() error
+}
+
+// ExecOptions configures command execution in a container
+type ExecOptions struct {
+	Cmd         []string // Command and arguments to execute
+	Interactive bool     // Keep STDIN open
+	TTY         bool     // Allocate a pseudo-TTY
+	Detach      bool     // Run in background
+	User        string   // User to run as (username or UID)
+	WorkDir     string   // Working directory inside container
+	Env         []string // Environment variables (KEY=VALUE format)
 }
 
 type containerdRuntime struct {
@@ -446,6 +458,79 @@ func (r *containerdRuntime) Exec(ctx context.Context, id string, cmd []string, s
 
 	if err := process.Start(ctx); err != nil {
 		return -1, fmt.Errorf("failed to start exec process: %w", err)
+	}
+
+	// Wait for process to complete
+	exitCh, err := process.Wait(ctx)
+	if err != nil {
+		return -1, fmt.Errorf("failed to wait for exec process: %w", err)
+	}
+
+	status := <-exitCh
+	return int(status.ExitCode()), nil
+}
+
+func (r *containerdRuntime) ExecWithOptions(ctx context.Context, id string, opts ExecOptions) (int, error) {
+	container, err := r.client.LoadContainer(ctx, id)
+	if err != nil {
+		return -1, fmt.Errorf("failed to load container: %w", err)
+	}
+
+	task, err := container.Task(ctx, nil)
+	if err != nil {
+		return -1, fmt.Errorf("container is not running: %w", err)
+	}
+
+	// Get container spec for process defaults
+	spec, err := container.Spec(ctx)
+	if err != nil {
+		return -1, fmt.Errorf("failed to get container spec: %w", err)
+	}
+
+	// Create exec process spec based on container spec
+	execSpec := *spec.Process
+	execSpec.Args = opts.Cmd
+	execSpec.Terminal = opts.TTY
+
+	// Override user if specified
+	if opts.User != "" {
+		execSpec.User.Username = opts.User
+	}
+
+	// Override working directory if specified
+	if opts.WorkDir != "" {
+		execSpec.Cwd = opts.WorkDir
+	}
+
+	// Add environment variables if specified
+	if len(opts.Env) > 0 {
+		execSpec.Env = append(execSpec.Env, opts.Env...)
+	}
+
+	// Create unique exec ID
+	execID := fmt.Sprintf("exec-%d", time.Now().UnixNano())
+
+	var ioCreator cio.Creator
+	if opts.Interactive {
+		ioCreator = cio.NewCreator(cio.WithStdio)
+	} else {
+		ioCreator = cio.NewCreator(cio.WithStreams(nil, os.Stdout, os.Stderr))
+	}
+
+	process, err := task.Exec(ctx, execID, &execSpec, ioCreator)
+	if err != nil {
+		return -1, fmt.Errorf("failed to create exec process: %w", err)
+	}
+	defer process.Delete(ctx)
+
+	if err := process.Start(ctx); err != nil {
+		return -1, fmt.Errorf("failed to start exec process: %w", err)
+	}
+
+	// If detached, don't wait for completion
+	if opts.Detach {
+		logrus.Infof("Started exec process %s in detached mode", execID)
+		return 0, nil
 	}
 
 	// Wait for process to complete

@@ -9,9 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/zarigata/budgie/internal/api"
-	"github.com/zarigata/budgie/internal/runtime"
-	"github.com/zarigata/budgie/pkg/types"
+	"github.com/zarigata/budgie/internal/cmdutil"
 )
 
 var (
@@ -32,19 +30,10 @@ Use --volumes to also remove associated volumes.`,
 }
 
 func removeContainers(cmd *cobra.Command, args []string) error {
-	rt, err := runtime.GetDefaultRuntime()
+	// Initialize command context
+	cmdCtx, err := cmdutil.NewCommandContext()
 	if err != nil {
-		return fmt.Errorf("failed to get runtime: %w", err)
-	}
-
-	dataDir := os.Getenv("BUDGIE_DATA_DIR")
-	if dataDir == "" {
-		dataDir = "/var/lib/budgie"
-	}
-
-	manager, err := api.NewContainerManager(rt, dataDir)
-	if err != nil {
-		return fmt.Errorf("failed to create manager: %w", err)
+		return err
 	}
 
 	ctx := context.Background()
@@ -53,7 +42,7 @@ func removeContainers(cmd *cobra.Command, args []string) error {
 
 	for _, idOrName := range args {
 		// Find container by ID prefix or name
-		ctr, err := findContainer(manager, idOrName)
+		ctr, err := cmdutil.FindContainer(cmdCtx.Manager, idOrName)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s: %v", idOrName, err))
 			continue
@@ -68,14 +57,14 @@ func removeContainers(cmd *cobra.Command, args []string) error {
 
 			// Stop the container first
 			fmt.Printf("Stopping container %s...\n", ctr.ShortID())
-			if err := manager.Stop(ctx, ctr.ID, 10*time.Second); err != nil {
+			if err := cmdCtx.Manager.Stop(ctx, ctr.ID, 10*time.Second); err != nil {
 				errors = append(errors, fmt.Sprintf("%s: failed to stop: %v", ctr.ShortID(), err))
 				continue
 			}
 		}
 
 		// Remove the container
-		if err := manager.Remove(ctx, ctr.ID); err != nil {
+		if err := cmdCtx.Manager.Remove(ctx, ctr.ID); err != nil {
 			errors = append(errors, fmt.Sprintf("%s: failed to remove: %v", ctr.ShortID(), err))
 			continue
 		}
@@ -85,7 +74,7 @@ func removeContainers(cmd *cobra.Command, args []string) error {
 			for _, vol := range ctr.Volumes {
 				if vol.Mode == "rw" {
 					// Only remove volumes within our data directory for safety
-					if strings.HasPrefix(vol.Source, dataDir) {
+					if strings.HasPrefix(vol.Source, cmdCtx.DataDir) {
 						if err := os.RemoveAll(vol.Source); err != nil {
 							fmt.Printf("Warning: failed to remove volume %s: %v\n", vol.Source, err)
 						} else {
@@ -111,33 +100,6 @@ func removeContainers(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func findContainer(manager *api.ContainerManager, idOrName string) (*types.Container, error) {
-	// Try exact match first
-	if ctr, err := manager.Get(idOrName); err == nil {
-		return ctr, nil
-	}
-
-	// Try prefix match
-	containers := manager.List()
-	var matches []*types.Container
-
-	for _, ctr := range containers {
-		if strings.HasPrefix(ctr.ID, idOrName) || ctr.Name == idOrName {
-			matches = append(matches, ctr)
-		}
-	}
-
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("no such container")
-	}
-
-	if len(matches) > 1 {
-		return nil, fmt.Errorf("ambiguous container ID, multiple matches found")
-	}
-
-	return matches[0], nil
 }
 
 func GetRmCmd() *cobra.Command {

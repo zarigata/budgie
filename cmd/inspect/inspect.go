@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 
-	"github.com/zarigata/budgie/internal/api"
-	"github.com/zarigata/budgie/internal/runtime"
+	"github.com/zarigata/budgie/internal/cmdutil"
 	"github.com/zarigata/budgie/pkg/types"
 )
 
@@ -23,32 +22,30 @@ var inspectCmd = &cobra.Command{
 	Short: "Display detailed information on containers",
 	Long: `Return low-level information on containers as JSON.
 
-You can specify multiple container IDs to inspect.`,
+You can specify multiple container IDs to inspect.
+Use --format to extract specific fields using Go templates.
+
+Examples:
+  budgie inspect mycontainer
+  budgie inspect --format '{{.Id}}' mycontainer
+  budgie inspect --format '{{.State.Status}}' mycontainer
+  budgie inspect --format '{{json .Config}}' mycontainer`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: inspectContainers,
 }
 
 func inspectContainers(cmd *cobra.Command, args []string) error {
-	rt, err := runtime.GetDefaultRuntime()
+	// Initialize command context
+	cmdCtx, err := cmdutil.NewCommandContext()
 	if err != nil {
-		return fmt.Errorf("failed to get runtime: %w", err)
-	}
-
-	dataDir := os.Getenv("BUDGIE_DATA_DIR")
-	if dataDir == "" {
-		dataDir = "/var/lib/budgie"
-	}
-
-	manager, err := api.NewContainerManager(rt, dataDir)
-	if err != nil {
-		return fmt.Errorf("failed to create manager: %w", err)
+		return err
 	}
 
 	var results []interface{}
 	var errors []string
 
 	for _, idOrName := range args {
-		ctr, err := findContainer(manager, idOrName)
+		ctr, err := cmdutil.FindContainer(cmdCtx.Manager, idOrName)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s: %v", idOrName, err))
 			continue
@@ -96,11 +93,32 @@ func inspectContainers(cmd *cobra.Command, args []string) error {
 		results = append(results, result)
 	}
 
-	// Output as JSON
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(results); err != nil {
-		return fmt.Errorf("failed to encode JSON: %w", err)
+	// Output based on format flag
+	if format != "" {
+		// Use Go template for formatting
+		tmpl, err := template.New("inspect").Funcs(template.FuncMap{
+			"json": func(v interface{}) string {
+				b, _ := json.Marshal(v)
+				return string(b)
+			},
+		}).Parse(format)
+		if err != nil {
+			return fmt.Errorf("invalid format template: %w", err)
+		}
+
+		for _, result := range results {
+			if err := tmpl.Execute(os.Stdout, result); err != nil {
+				return fmt.Errorf("failed to execute template: %w", err)
+			}
+			fmt.Println()
+		}
+	} else {
+		// Default JSON output
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(results); err != nil {
+			return fmt.Errorf("failed to encode JSON: %w", err)
+		}
 	}
 
 	if len(errors) > 0 {
@@ -174,33 +192,6 @@ func formatPortBindingsForInspect(ports []types.PortMapping) map[string]interfac
 		}
 	}
 	return result
-}
-
-func findContainer(manager *api.ContainerManager, idOrName string) (*types.Container, error) {
-	// Try exact match first
-	if ctr, err := manager.Get(idOrName); err == nil {
-		return ctr, nil
-	}
-
-	// Try prefix match
-	containers := manager.List()
-	var matches []*types.Container
-
-	for _, ctr := range containers {
-		if strings.HasPrefix(ctr.ID, idOrName) || ctr.Name == idOrName {
-			matches = append(matches, ctr)
-		}
-	}
-
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("no such container")
-	}
-
-	if len(matches) > 1 {
-		return nil, fmt.Errorf("ambiguous container ID, multiple matches found")
-	}
-
-	return matches[0], nil
 }
 
 func GetInspectCmd() *cobra.Command {

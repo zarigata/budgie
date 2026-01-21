@@ -9,7 +9,7 @@ import (
 	"github.com/zarigata/budgie/cmd/nest"
 	"github.com/zarigata/budgie/cmd/ps"
 	"github.com/zarigata/budgie/cmd/rm"
-	"github.com/zarigata/budgie/cmd/root"
+	root "github.com/zarigata/budgie/cmd/budgie"
 	"github.com/zarigata/budgie/cmd/run"
 	"github.com/zarigata/budgie/cmd/stop"
 )

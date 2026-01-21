@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/zarigata/budgie/internal/api"
+	"github.com/zarigata/budgie/internal/cmdutil"
 	"github.com/zarigata/budgie/internal/runtime"
-	"github.com/zarigata/budgie/pkg/types"
 )
 
 var (
@@ -28,7 +26,10 @@ var execCmd = &cobra.Command{
 	Long: `Execute a command inside a running container.
 
 Use -i for interactive mode (keeps STDIN open).
-Use -t to allocate a pseudo-TTY.`,
+Use -t to allocate a pseudo-TTY.
+Use -u to specify the user to run as.
+Use -w to specify the working directory.
+Use -e to set environment variables.`,
 	Args: cobra.MinimumNArgs(2),
 	RunE: execCommand,
 }
@@ -37,35 +38,38 @@ func execCommand(cmd *cobra.Command, args []string) error {
 	containerID := args[0]
 	execArgs := args[1:]
 
-	rt, err := runtime.GetDefaultRuntime()
-	if err != nil {
-		return fmt.Errorf("failed to get runtime: %w", err)
-	}
-
-	dataDir := os.Getenv("BUDGIE_DATA_DIR")
-	if dataDir == "" {
-		dataDir = "/var/lib/budgie"
-	}
-
-	manager, err := api.NewContainerManager(rt, dataDir)
-	if err != nil {
-		return fmt.Errorf("failed to create manager: %w", err)
-	}
-
-	// Find container by ID prefix or name
-	ctr, err := findContainer(manager, containerID)
+	// Initialize command context
+	cmdCtx, err := cmdutil.NewCommandContext()
 	if err != nil {
 		return err
 	}
 
-	if !ctr.IsRunning() {
-		return fmt.Errorf("container %s is not running", ctr.ShortID())
+	// Find container by ID prefix or name
+	ctr, err := cmdutil.FindContainer(cmdCtx.Manager, containerID)
+	if err != nil {
+		return err
+	}
+
+	// Ensure container is running
+	if err := cmdutil.RequireRunning(ctr); err != nil {
+		return err
 	}
 
 	ctx := context.Background()
 
+	// Build exec options
+	opts := runtime.ExecOptions{
+		Cmd:         execArgs,
+		Interactive: interactive || tty,
+		TTY:         tty,
+		Detach:      detach,
+		User:        user,
+		WorkDir:     workdir,
+		Env:         envVars,
+	}
+
 	// Execute command
-	exitCode, err := rt.Exec(ctx, ctr.ID, execArgs, interactive || tty)
+	exitCode, err := cmdCtx.Runtime.ExecWithOptions(ctx, ctr.ID, opts)
 	if err != nil {
 		return fmt.Errorf("exec failed: %w", err)
 	}
@@ -75,33 +79,6 @@ func execCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func findContainer(manager *api.ContainerManager, idOrName string) (*types.Container, error) {
-	// Try exact match first
-	if ctr, err := manager.Get(idOrName); err == nil {
-		return ctr, nil
-	}
-
-	// Try prefix match
-	containers := manager.List()
-	var matches []*types.Container
-
-	for _, ctr := range containers {
-		if strings.HasPrefix(ctr.ID, idOrName) || ctr.Name == idOrName {
-			matches = append(matches, ctr)
-		}
-	}
-
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("no such container: %s", idOrName)
-	}
-
-	if len(matches) > 1 {
-		return nil, fmt.Errorf("ambiguous container ID, multiple matches found")
-	}
-
-	return matches[0], nil
 }
 
 func GetExecCmd() *cobra.Command {
