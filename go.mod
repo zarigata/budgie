@@ -6,7 +6,6 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/containerd/containerd v1.7.11
 	github.com/hashicorp/mdns v1.0.4
-	github.com/minio/rsync-go v1.0.0
 	github.com/hashicorp/raft v1.7.3
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/sirupsen/logrus v1.9.3
