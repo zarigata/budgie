@@ -1,4 +1,4 @@
-module github.com/budgie/budgie
+module github.com/zarigata/budgie
 
 go 1.21
 

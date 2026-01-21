@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/budgie/budgie/pkg/types"
 	"github.com/sirupsen/logrus"
+	"github.com/zarigata/budgie/pkg/types"
 )
 
 type LoadBalancer interface {

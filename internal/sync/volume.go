@@ -4,13 +4,12 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 
-	"github.com/budgie/budgie/pkg/types"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
+	"github.com/zarigata/budgie/pkg/types"
 )
 
 // FileSignature represents a file's sync signature

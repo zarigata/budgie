@@ -7,10 +7,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/budgie/budgie/internal/api"
-	"github.com/budgie/budgie/internal/runtime"
-	"github.com/budgie/budgie/pkg/types"
 	"github.com/spf13/cobra"
+
+	"github.com/zarigata/budgie/internal/api"
+	"github.com/zarigata/budgie/internal/runtime"
+	"github.com/zarigata/budgie/pkg/types"
 )
 
 var (

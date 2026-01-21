@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/budgie/budgie/internal/bundle"
-	"github.com/budgie/budgie/internal/discovery"
-	"github.com/budgie/budgie/internal/sync"
+	"github.com/zarigata/budgie/internal/bundle"
+	"github.com/zarigata/budgie/internal/discovery"
+	"github.com/zarigata/budgie/internal/sync"
 )
 
 const (

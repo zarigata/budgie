@@ -5,9 +5,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/budgie/budgie/internal/ui"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
+
+	"github.com/zarigata/budgie/internal/ui"
 )
 
 var nestCmd = &cobra.Command{

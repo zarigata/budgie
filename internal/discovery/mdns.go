@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/budgie/budgie/pkg/types"
 	"github.com/hashicorp/mdns"
 	"github.com/sirupsen/logrus"
+
+	"github.com/zarigata/budgie/pkg/types"
 )
 
 type DiscoveryService struct {

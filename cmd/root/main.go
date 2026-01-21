@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/budgie/budgie/cmd/chirp"
-	"github.com/budgie/budgie/cmd/nest"
-	"github.com/budgie/budgie/cmd/ps"
-	"github.com/budgie/budgie/cmd/root"
-	"github.com/budgie/budgie/cmd/run"
-	"github.com/budgie/budgie/cmd/stop"
+	"github.com/zarigata/budgie/cmd/chirp"
+	"github.com/zarigata/budgie/cmd/nest"
+	"github.com/zarigata/budgie/cmd/ps"
+	"github.com/zarigata/budgie/cmd/root"
+	"github.com/zarigata/budgie/cmd/run"
+	"github.com/zarigata/budgie/cmd/stop"
 )
 
 func main() {

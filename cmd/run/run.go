@@ -6,10 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/budgie/budgie/internal/api"
-	"github.com/budgie/budgie/internal/bundle"
-	"github.com/budgie/budgie/internal/runtime"
 	"github.com/spf13/cobra"
+
+	"github.com/zarigata/budgie/internal/api"
+	"github.com/zarigata/budgie/internal/bundle"
+	"github.com/zarigata/budgie/internal/runtime"
 )
 
 var (

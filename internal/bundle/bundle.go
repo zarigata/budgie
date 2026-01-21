@@ -1,13 +1,13 @@
 package bundle
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/budgie/budgie/pkg/types"
 	"gopkg.in/yaml.v3"
+
+	"github.com/zarigata/budgie/pkg/types"
 )
 
 type Bundle struct {

@@ -1,14 +1,16 @@
 package chirp
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
 
-	"github.com/budgie/budgie/internal/discovery"
 	"github.com/spf13/cobra"
+
+	"github.com/zarigata/budgie/internal/discovery"
 )
 
 var chirpCmd = &cobra.Command{
