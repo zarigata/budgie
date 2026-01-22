@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/zarigata/budgie/pkg/types"
 )
 
 type LoadBalancer interface {
@@ -33,7 +32,7 @@ const (
 type ContainerProxy struct {
 	mu       sync.RWMutex
 	pools    map[string]*backendPool
-	type     LoadBalancerType
+	lbType   LoadBalancerType
 	health   *HealthChecker
 	shutdown chan struct{}
 }
@@ -59,7 +58,7 @@ type HealthChecker struct {
 func NewContainerProxy(lbType LoadBalancerType) *ContainerProxy {
 	return &ContainerProxy{
 		pools:    make(map[string]*backendPool),
-		type:     lbType,
+		lbType:   lbType,
 		shutdown: make(chan struct{}),
 	}
 }
@@ -166,7 +165,7 @@ func (p *ContainerProxy) GetProxy(containerID string) (http.Handler, error) {
 }
 
 func (p *ContainerProxy) selectBackend(pool *backendPool) *backend {
-	switch p.type {
+	switch p.lbType {
 	case RoundRobin:
 		return p.roundRobinSelect(pool)
 	case LeastConn:
