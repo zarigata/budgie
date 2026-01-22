@@ -37,12 +37,14 @@ func (d *DiscoveryService) AnnounceContainer(ctr *types.Container) error {
 		}
 
 		serviceName := fmt.Sprintf("budgie-%s", ctr.ShortID())
+		localIPs := getLocalNetIPs()
 		service, err := mdns.NewMDNSService(
 			serviceName,
 			"_budgie._tcp",
 			"local.",
 			ctr.ID,
 			port.HostPort,
+			localIPs,
 			txt,
 		)
 		if err != nil {
@@ -131,7 +133,7 @@ type DiscoveredContainer struct {
 }
 
 func parseEntry(entry *mdns.ServiceEntry) *DiscoveredContainer {
-	if entry.Typev4 == nil {
+	if entry.AddrV4 == nil {
 		return nil
 	}
 
@@ -157,11 +159,8 @@ func parseEntry(entry *mdns.ServiceEntry) *DiscoveredContainer {
 		NameTag: entry.Name,
 	}
 
-	if len(entry.AddrV4) > 0 {
-		ctr.IPs = make([]string, 0, len(entry.AddrV4))
-		for _, addr := range entry.AddrV4 {
-			ctr.IPs = append(ctr.IPs, addr.String())
-		}
+	if entry.AddrV4 != nil {
+		ctr.IPs = []string{entry.AddrV4.String()}
 	}
 
 	return ctr
@@ -177,13 +176,22 @@ func parseTxtField(field string) (string, string, bool) {
 }
 
 func getLocalIPs() []string {
+	netIPs := getLocalNetIPs()
+	ips := make([]string, len(netIPs))
+	for i, ip := range netIPs {
+		ips[i] = ip.String()
+	}
+	return ips
+}
+
+func getLocalNetIPs() []net.IP {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		logrus.Errorf("Failed to get interfaces: %v", err)
-		return []string{"127.0.0.1"}
+		return []net.IP{net.ParseIP("127.0.0.1")}
 	}
 
-	var ips []string
+	var ips []net.IP
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
 			continue
@@ -197,14 +205,14 @@ func getLocalIPs() []string {
 		for _, addr := range addrs {
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 				if ipnet.IP.To4() != nil {
-					ips = append(ips, ipnet.IP.String())
+					ips = append(ips, ipnet.IP)
 				}
 			}
 		}
 	}
 
 	if len(ips) == 0 {
-		return []string{"127.0.0.1"}
+		return []net.IP{net.ParseIP("127.0.0.1")}
 	}
 
 	return ips

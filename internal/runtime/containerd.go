@@ -29,6 +29,18 @@ type Runtime interface {
 	Logs(ctx context.Context, id string, follow bool, tail int) (LogReader, error)
 	Exec(ctx context.Context, id string, cmd []string, stdin bool) (int, error)
 	ExecWithOptions(ctx context.Context, id string, opts ExecOptions) (int, error)
+	Pull(ctx context.Context, imageName string) (*ImageInfo, error)
+	ListImages(ctx context.Context) ([]*ImageInfo, error)
+	RemoveImage(ctx context.Context, imageName string) error
+}
+
+// ImageInfo contains information about a container image
+type ImageInfo struct {
+	Name      string    `json:"name"`
+	ID        string    `json:"id"`
+	Size      int64     `json:"size"`
+	CreatedAt time.Time `json:"created_at"`
+	Labels    map[string]string `json:"labels,omitempty"`
 }
 
 // LogReader provides access to container logs
@@ -541,4 +553,75 @@ func (r *containerdRuntime) ExecWithOptions(ctx context.Context, id string, opts
 
 	status := <-exitCh
 	return int(status.ExitCode()), nil
+}
+
+// Pull downloads an image from a registry
+func (r *containerdRuntime) Pull(ctx context.Context, imageName string) (*ImageInfo, error) {
+	image, err := r.client.Pull(ctx, imageName, containerd.WithPullUnpack)
+	if err != nil {
+		return nil, fmt.Errorf("failed to pull image %s: %w", imageName, err)
+	}
+
+	logrus.Infof("Pulled image %s", imageName)
+
+	// Get image info
+	config, err := image.Config(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get image config: %w", err)
+	}
+
+	size, err := image.Size(ctx)
+	if err != nil {
+		size = 0 // Non-fatal, just set to 0
+	}
+
+	return &ImageInfo{
+		Name:      image.Name(),
+		ID:        config.Digest.String(),
+		Size:      size,
+		CreatedAt: image.Metadata().CreatedAt,
+		Labels:    image.Labels(),
+	}, nil
+}
+
+// ListImages returns all images in the containerd store
+func (r *containerdRuntime) ListImages(ctx context.Context) ([]*ImageInfo, error) {
+	images, err := r.client.ListImages(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list images: %w", err)
+	}
+
+	var result []*ImageInfo
+	for _, img := range images {
+		config, err := img.Config(ctx)
+		if err != nil {
+			logrus.Warnf("Failed to get config for image %s: %v", img.Name(), err)
+			continue
+		}
+
+		size, err := img.Size(ctx)
+		if err != nil {
+			size = 0
+		}
+
+		result = append(result, &ImageInfo{
+			Name:      img.Name(),
+			ID:        config.Digest.String(),
+			Size:      size,
+			CreatedAt: img.Metadata().CreatedAt,
+			Labels:    img.Labels(),
+		})
+	}
+
+	return result, nil
+}
+
+// RemoveImage removes an image from the containerd store
+func (r *containerdRuntime) RemoveImage(ctx context.Context, imageName string) error {
+	imageService := r.client.ImageService()
+	if err := imageService.Delete(ctx, imageName); err != nil {
+		return fmt.Errorf("failed to remove image %s: %w", imageName, err)
+	}
+	logrus.Infof("Removed image %s", imageName)
+	return nil
 }

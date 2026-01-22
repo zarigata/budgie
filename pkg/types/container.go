@@ -87,6 +87,9 @@ type Container struct {
 	Replicas      *ReplicasConfig `json:"replicas,omitempty"`
 	Resources     *ResourceLimits `json:"resources,omitempty"`
 	RestartPolicy *RestartPolicy  `json:"restart_policy,omitempty"`
+	DependsOn     []string        `json:"depends_on,omitempty"`
+	Network       string          `json:"network,omitempty"`
+	NetworkConfig *NetworkConfig  `json:"network_config,omitempty"`
 
 	// Runtime fields
 	BundlePath   string    `json:"-"`                       // Path to .bun file
@@ -97,6 +100,15 @@ type Container struct {
 	ExitedAt     time.Time `json:"exited_at,omitempty"`
 	Pid          int       `json:"pid"`                     // Container process ID
 	RestartCount int       `json:"restart_count,omitempty"` // Number of times container has been restarted
+}
+
+// NetworkConfig defines network settings for a container
+type NetworkConfig struct {
+	IPAddress   string   `json:"ip_address,omitempty"`
+	Gateway     string   `json:"gateway,omitempty"`
+	DNS         []string `json:"dns,omitempty"`
+	Hostname    string   `json:"hostname,omitempty"`
+	ExtraHosts  []string `json:"extra_hosts,omitempty"`
 }
 
 // GenerateContainerID generates a unique 64-character hex container ID

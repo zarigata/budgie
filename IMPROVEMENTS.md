@@ -83,6 +83,48 @@
 - CA verification support
 - `TLSServer` and `TLSClient` wrappers
 
+### 10. Added `budgie pull <image>` command (Medium Priority) - COMPLETED
+- **File**: `cmd/pull/pull.go`
+- Pre-pull images from registries before running containers
+- Normalizes image names (adds docker.io/library/ if needed)
+- Supports `--quiet` flag for script-friendly output
+- Supports `--platform` flag for multi-platform images
+
+### 11. Added `budgie images` command (Medium Priority) - COMPLETED
+- **File**: `cmd/images/images.go`
+- List locally stored images
+- Supports `--digests`, `--no-trunc`, `--quiet`, `--format` flags
+- Filter by repository name
+- Shows repository, tag, image ID, creation time, and size
+
+### 12. Added Health Check Integration (Medium Priority) - COMPLETED
+- **File**: `internal/api/healthcheck.go`
+- Monitors container health via HTTP health checks
+- Auto-restarts unhealthy containers (integrates with restart policy)
+- Tracks health status: healthy, unhealthy, starting
+- Configurable retry count and timeout
+
+### 13. Added Container Dependencies (Medium Priority) - COMPLETED
+- **File**: `internal/api/dependency.go`
+- `depends_on` field in container configuration
+- Topological sort for startup ordering
+- Cycle detection for circular dependencies
+- Wait for dependencies before starting container
+
+### 14. Added Network Isolation (Medium Priority) - COMPLETED
+- **Files**: `internal/network/network.go`, `cmd/network/network.go`
+- Container network groups with IP allocation
+- Default `budgie0` network (172.20.0.0/16)
+- Commands: `budgie network ls`, `create`, `rm`, `inspect`
+- Connect/disconnect containers from networks
+
+### 15. Added Secrets Management (Medium Priority) - COMPLETED
+- **Files**: `internal/secrets/secrets.go`, `cmd/secret/secret.go`
+- AES-GCM encrypted secret storage
+- PBKDF2 key derivation with salt
+- Commands: `budgie secret create`, `ls`, `rm`, `inspect`
+- Secure file permissions (0600/0700)
+
 ## Additional Improvements
 
 ### Environment File Support
@@ -122,6 +164,10 @@
 | `budgie inspect` | Show detailed container info |
 | `budgie config` | Manage configuration |
 | `budgie chirp <id>` | Join as replica (fixed) |
+| `budgie pull <image>` | Pre-pull images from registry |
+| `budgie images` | List locally stored images |
+| `budgie network` | Manage container networks |
+| `budgie secret` | Manage encrypted secrets |
 
 ## Files Modified
 
@@ -142,19 +188,21 @@
 - `cmd/exec/exec.go` - Exec command
 - `cmd/inspect/inspect.go` - Inspect command
 - `cmd/config/config.go` - Config command
+- `cmd/pull/pull.go` - Pull command
+- `cmd/images/images.go` - Images command
+- `cmd/network/network.go` - Network command
+- `cmd/secret/secret.go` - Secret command
 - `internal/config/config.go` - Configuration package
 - `internal/api/restart.go` - Restart monitor
+- `internal/api/healthcheck.go` - Health check monitor
+- `internal/api/dependency.go` - Dependency resolver
+- `internal/network/network.go` - Network manager
+- `internal/secrets/secrets.go` - Secrets manager
 - `internal/sync/tls.go` - TLS support
 
-## Remaining Medium Priority Features (Not Implemented)
+## Remaining Features (Not Yet Implemented)
 
-10. `budgie pull <image>` - Pre-pull images
-11. `budgie images` - List local images
-12. Health check integration - Auto-restart unhealthy containers
-13. Container dependencies - `depends_on` field
-14. Network isolation - Container network groups
-15. Secrets management - Encrypted secrets
-16. Web dashboard - Browser UI
+16. Web dashboard - Browser UI for container management
 
 ## Building
 
@@ -195,4 +243,22 @@ budgie config init
 
 # Join as replica
 budgie chirp --sync <container-id>
+
+# Pull an image
+budgie pull nginx:latest
+
+# List images
+budgie images
+
+# Network management
+budgie network ls
+budgie network create mynetwork --subnet 172.22.0.0/16
+budgie network inspect mynetwork
+budgie network rm mynetwork
+
+# Secrets management
+echo "mysecret" | budgie secret create my-secret
+budgie secret ls
+budgie secret inspect my-secret
+budgie secret rm my-secret
 ```
